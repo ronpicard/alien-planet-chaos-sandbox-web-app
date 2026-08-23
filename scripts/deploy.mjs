@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
@@ -20,9 +21,39 @@ function repoSlug() {
   return m[2]
 }
 
+function remoteUrl() {
+  return execSync('git remote get-url origin', { cwd: root, encoding: 'utf-8' }).trim()
+}
+
+function run(cmd, cwd) {
+  console.log(cmd)
+  execSync(cmd, {
+    cwd,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: 'Ron Picard',
+      GIT_AUTHOR_EMAIL: 'ronpicard@users.noreply.github.com',
+      GIT_COMMITTER_NAME: 'Ron Picard',
+      GIT_COMMITTER_EMAIL: 'ronpicard@users.noreply.github.com',
+    },
+  })
+}
+
 const base = `/${repoSlug()}/`
-console.log(`vite build --base=${base}`)
-execSync(`npx vite build --base=${base}`, { stdio: 'inherit', cwd: root })
+run(`npx vite build --base=${base}`, root)
 writeFileSync(join(root, 'dist', '.nojekyll'), '')
-console.log('gh-pages -d dist')
-execSync('npx gh-pages -d dist -f', { stdio: 'inherit', cwd: root })
+
+// Publish from an isolated temp repo so we never touch the main working tree.
+const tmp = mkdtempSync(join(tmpdir(), 'apcs-pages-'))
+try {
+  cpSync(join(root, 'dist'), tmp, { recursive: true })
+  run('git init -b gh-pages', tmp)
+  run('git add -A', tmp)
+  run('git commit -m "Deploy Vite build to GitHub Pages"', tmp)
+  run(`git remote add origin ${remoteUrl()}`, tmp)
+  run('git push -f origin gh-pages', tmp)
+  console.log('Published clean dist/ to origin/gh-pages')
+} finally {
+  rmSync(tmp, { recursive: true, force: true })
+}
