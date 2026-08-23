@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
@@ -23,5 +23,6 @@ function repoSlug() {
 const base = `/${repoSlug()}/`
 console.log(`vite build --base=${base}`)
 execSync(`npx vite build --base=${base}`, { stdio: 'inherit', cwd: root })
+writeFileSync(join(root, 'dist', '.nojekyll'), '')
 console.log('gh-pages -d dist')
-execSync('npx gh-pages -d dist', { stdio: 'inherit', cwd: root })
+execSync('npx gh-pages -d dist -f', { stdio: 'inherit', cwd: root })
