@@ -17,6 +17,9 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 - `npm run build` — production build to `dist/`
 - `npm run preview` — preview the production build
 - `npm run lint` — run oxlint
+- `npm run deploy` — build with the GitHub Pages base path and publish `dist/` to the `gh-pages` branch
+
+Live site: https://ronpicard.github.io/alien-planet-chaos-sandbox-web-app/
 
 ## Controls
 
